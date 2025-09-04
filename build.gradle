@@ -28,10 +28,6 @@ buildscript {
 }
 apply plugin: 'com.android.library'
 
-repositories {
-    mavenCentral()
-    google()
-}
 
 dependencies {
     api 'com.google.protobuf:protobuf-java:3.11.4'
