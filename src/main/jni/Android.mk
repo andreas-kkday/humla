@@ -44,7 +44,7 @@ LOCAL_SRC_FILES     := bands.c celt.c cwrs.c entcode.c entdec.c entenc.c header.
                        laplace.c mathops.c mdct.c modes.c pitch.c plc.c quant_bands.c rate.c vq.c \
                        $(ROOT)/jnicelt11.cpp
 LOCAL_C_INCLUDES    := $(ROOT)/celt-0.11.0-src/libcelt/
-LOCAL_CFLAGS        := -I$(ROOT)/celt-0.11.0-build -DHAVE_CONFIG_H -fvisibility=hidden
+LOCAL_CFLAGS        := -I$(ROOT)/celt-0.11.0-build -DHAVE_CONFIG_H -fvisibility=hidden -Wno-implicit-function-declaration
 LOCAL_CPP_FEATURES := exceptions
 LOCAL_LDLIBS := -llog
 include $(BUILD_SHARED_LIBRARY)
