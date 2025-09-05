@@ -83,8 +83,12 @@ public class HumlaTCP extends HumlaNetworkThread {
                 mTCPSocket = mSocketFactory.createSocket(mHost, mPort);
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) { // SNI support requires at least API 17
-                SSLCertificateSocketFactory scsf = (SSLCertificateSocketFactory) SSLCertificateSocketFactory.getDefault(0);
-                scsf.setHostname(mTCPSocket, mHost);
+                try {
+                    SSLCertificateSocketFactory scsf = (SSLCertificateSocketFactory) SSLCertificateSocketFactory.getDefault(0);
+                    scsf.setHostname(mTCPSocket, mHost);
+                } catch (IllegalArgumentException exception) {
+
+                }
             }
 
             mTCPSocket.setKeepAlive(true);

@@ -30,14 +30,17 @@ apply plugin: 'com.android.library'
 
 
 dependencies {
-    api 'com.google.protobuf:protobuf-java:3.11.4'
-    api 'com.madgag.spongycastle:core:1.51.0.0'
+    api 'com.google.protobuf:protobuf-java:3.25.5'
+//    api 'com.madgag.spongycastle:core:1.51.0.0'
 
     // Custom PKCS12 keybag parse modifications to support Mumble unencrypted certificates
     // Source: https://github.com/Morlunk/spongycastle/tree/pkcs12-keybag-fixes
-    api files('libs/humla-spongycastle/prov/build/libs/prov-1.51.0.0.jar',
-              'libs/humla-spongycastle/pkix/build/libs/pkix-1.51.0.0.jar')
+//    api files('libs/humla-spongycastle/prov/build/libs/prov-1.51.0.0.jar',
+//              'libs/humla-spongycastle/pkix/build/libs/pkix-1.51.0.0.jar')
 
+    implementation 'com.madgag.spongycastle:core:1.58.0.0'
+    implementation 'com.madgag.spongycastle:prov:1.58.0.0'
+    implementation 'com.madgag.spongycastle:pkix:1.54.0.0'
     implementation 'com.googlecode.javacpp:javacpp:0.7'
     implementation 'org.jetbrains:annotations:18.0.0'
     implementation 'org.minidns:minidns-hla:0.3.4'
