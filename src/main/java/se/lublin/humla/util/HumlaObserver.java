@@ -22,6 +22,7 @@ import java.security.cert.X509Certificate;
 import se.lublin.humla.model.IChannel;
 import se.lublin.humla.model.IMessage;
 import se.lublin.humla.model.IUser;
+import se.lublin.humla.protobuf.Mumble;
 
 /**
  * Stub class for Humla service observation.
@@ -29,7 +30,7 @@ import se.lublin.humla.model.IUser;
  */
 public class HumlaObserver implements IHumlaObserver {
     @Override
-    public void onConnected() {
+    public void onConnected(Mumble.ServerSync msg) {
 
     }
 

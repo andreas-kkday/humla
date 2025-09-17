@@ -72,6 +72,7 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
         UNLOGGED_MESSAGES.add(HumlaTCPMessageType.UDPTunnel);
         UNLOGGED_MESSAGES.add(HumlaTCPMessageType.Ping);
     }
+
     private HumlaConnectionListener mListener;
 
     // Tor connection details
@@ -139,7 +140,7 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
             // Start TCP/UDP ping thread. FIXME is this the right place?
             try {
                 mPingTask = mPingExecutorService.scheduleAtFixedRate(mPingRunnable, 0, 5, TimeUnit.SECONDS);
-            } catch(RejectedExecutionException e) {
+            } catch (RejectedExecutionException e) {
                 Log.w(TAG, "failed to start ping thread, in \"shutdown\"? ", e);
             }
 
@@ -150,17 +151,17 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
             mMainHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    mListener.onConnectionSynchronized();
+                    mListener.onConnectionSynchronized(msg);
                 }
             });
-
+            Log.d(TAG, "ServerSync " + msg.getWelcomeText());
         }
 
         @Override
         public void messageCodecVersion(Mumble.CodecVersion msg) {
-            if(msg.hasOpus() && msg.getOpus())
+            if (msg.hasOpus() && msg.getOpus())
                 mCodec = HumlaUDPMessageType.UDPVoiceOpus;
-            else if(msg.hasBeta() && !msg.getPreferAlpha())
+            else if (msg.hasBeta() && !msg.getPreferAlpha())
                 mCodec = HumlaUDPMessageType.UDPVoiceCELTBeta;
             else
                 mCodec = HumlaUDPMessageType.UDPVoiceCELTAlpha;
@@ -174,7 +175,7 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
 
         @Override
         public void messageUserRemove(final Mumble.UserRemove msg) {
-            if(msg.getSession() == mSession) {
+            if (msg.getSession() == mSession) {
                 mConnected = false;
                 handleFatalException(new HumlaException(msg));
             }
@@ -183,18 +184,18 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
         @Override
         public void messageCryptSetup(Mumble.CryptSetup msg) {
             try {
-                if(msg.hasKey() && msg.hasClientNonce() && msg.hasServerNonce()) {
+                if (msg.hasKey() && msg.hasClientNonce() && msg.hasServerNonce()) {
                     ByteString key = msg.getKey();
                     ByteString clientNonce = msg.getClientNonce();
                     ByteString serverNonce = msg.getServerNonce();
 
-                    if(key.size() == CryptState.AES_BLOCK_SIZE &&
+                    if (key.size() == CryptState.AES_BLOCK_SIZE &&
                             clientNonce.size() == CryptState.AES_BLOCK_SIZE &&
                             serverNonce.size() == CryptState.AES_BLOCK_SIZE)
                         mCryptState.setKeys(key.toByteArray(), clientNonce.toByteArray(), serverNonce.toByteArray());
-                } else if(msg.hasServerNonce()) {
+                } else if (msg.hasServerNonce()) {
                     ByteString serverNonce = msg.getServerNonce();
-                    if(serverNonce.size() == CryptState.AES_BLOCK_SIZE) {
+                    if (serverNonce.size() == CryptState.AES_BLOCK_SIZE) {
                         mCryptState.mUiResync++;
                         mCryptState.mDecryptIV = serverNonce.toByteArray();
                     }
@@ -226,14 +227,14 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
 
             // In microseconds
             long elapsed = getElapsed();
-            mLastTCPPing = elapsed-msg.getTimestamp();
+            mLastTCPPing = elapsed - msg.getTimestamp();
 
-            if(((mCryptState.mUiRemoteGood == 0) || (mCryptState.mUiGood == 0)) && mUsingUDP && elapsed > 20000000) {
+            if (((mCryptState.mUiRemoteGood == 0) || (mCryptState.mUiGood == 0)) && mUsingUDP && elapsed > 20000000) {
                 mUsingUDP = false;
-                if(!shouldForceTCP() && mListener != null) {
-                    if((mCryptState.mUiRemoteGood == 0) && (mCryptState.mUiGood == 0))
+                if (!shouldForceTCP() && mListener != null) {
+                    if ((mCryptState.mUiRemoteGood == 0) && (mCryptState.mUiGood == 0))
                         mListener.onConnectionWarning("UDP packets cannot be sent to or received from the server. Switching to TCP mode.");
-                    else if(mCryptState.mUiRemoteGood == 0)
+                    else if (mCryptState.mUiRemoteGood == 0)
                         mListener.onConnectionWarning("UDP packets cannot be sent to the server. Switching to TCP mode.");
                     else
                         mListener.onConnectionWarning("UDP packets cannot be received from the server. Switching to TCP mode.");
@@ -259,7 +260,7 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
 
             long timestamp = buffer.getLong();
             long now = getElapsed();
-            mLastUDPPing = now-timestamp;
+            mLastUDPPing = now - timestamp;
             // TODO refresh UDP?
         }
     };
@@ -294,7 +295,8 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
     /**
      * Calculates the bandwidth required to send audio with the given parameters.
      * Includes packet overhead.
-     * @param bitrate The bitrate in bps.
+     *
+     * @param bitrate         The bitrate in bps.
      * @param framesPerPacket The number of frames per audio packet.
      * @return The bandwidth in bps used by the given configuration.
      */
@@ -346,6 +348,7 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
     /**
      * Returns whether or not the service is fully synchronized with the remote server- this happens when we get the ServerSync message.
      * You shouldn't log any user actions until the connection is synchronized.
+     *
      * @return true or false, depending on whether or not we have received the ServerSync message.
      */
     public boolean isSynchronized() {
@@ -353,7 +356,7 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
     }
 
     public long getElapsed() {
-        return (System.nanoTime()-mStartTimestamp)/1000;
+        return (System.nanoTime() - mStartTimestamp) / 1000;
     }
 
     public void addTCPMessageHandlers(HumlaTCPMessageListener... handlers) {
@@ -363,6 +366,7 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
     public void removeTCPMessageHandler(HumlaTCPMessageListener handler) {
         mTCPHandlers.remove(handler);
     }
+
     public void addUDPMessageHandlers(HumlaUDPMessageListener... handlers) {
         Collections.addAll(mUDPHandlers, handlers);
     }
@@ -374,6 +378,7 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
     /**
      * Set whether to proxy all connections over a local Orbot instance.
      * This will force TCP tunneling for voice packets.
+     *
      * @param useTor true if Tor should be enabled and TCP forced.
      */
     public void setUseTor(boolean useTor) {
@@ -382,6 +387,7 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
 
     /**
      * Set whether to tunnel all voice packets over TCP, disabling the UDP thread.
+     *
      * @param forceTcp true if voice packets should tunnel over TCP.
      * @see #setUseTor
      */
@@ -391,8 +397,9 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
 
     /**
      * Sets the PKCS12 certificate data and password to use when authenticating.
+     *
      * @param certificate A PKCS12-formatted certificate.
-     * @param password An optional password used to encrypt the certificate.
+     * @param password    An optional password used to encrypt the certificate.
      */
     public void setKeys(byte[] certificate, String password) {
         mCertificate = certificate;
@@ -449,6 +456,7 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
 
     /**
      * Returns the server-reported maximum input bandwidth, or -1 if not set.
+     *
      * @return the input bandwidth in bps, or -1 if not set.
      */
     public int getMaxBandwidth() throws NotSynchronizedException {
@@ -465,6 +473,7 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
 
     /**
      * Return whether or not voice packets should be tunneled over TCP.
+     *
      * @return true if TCP is manually forced or Tor has been disabled.
      */
     public boolean shouldForceTCP() {
@@ -481,9 +490,9 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
         mPort = 0;
 
         // Stop running network resources
-        if(mPingTask != null) mPingTask.cancel(true);
-        if(mTCP != null) mTCP.disconnect();
-        if(mUDP != null) mUDP.disconnect();
+        if (mPingTask != null) mPingTask.cancel(true);
+        if (mTCP != null) mTCP.disconnect();
+        if (mUDP != null) mUDP.disconnect();
         mPingExecutorService.shutdown();
 
         mTCP = null;
@@ -493,10 +502,11 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
 
     /**
      * Handles an exception that would cause termination of the connection.
+     *
      * @param e The exception that caused termination.
      */
     private void handleFatalException(final HumlaException e) {
-        if(mExceptionHandled) return;
+        if (mExceptionHandled) return;
         mExceptionHandled = true;
         mError = e;
 
@@ -509,12 +519,13 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
     /**
      * Attempts to create a socket factory using the HumlaConnection's certificate and trust
      * store configuration.
+     *
      * @return A socket factory set to authenticate with a certificate and trust store, if set.
      */
     private HumlaSSLSocketFactory createSocketFactory() throws HumlaException {
         try {
             KeyStore keyStore = null;
-            if(mCertificate != null) {
+            if (mCertificate != null) {
                 keyStore = KeyStore.getInstance("PKCS12", new BouncyCastleProvider());
                 ByteArrayInputStream inputStream = new ByteArrayInputStream(mCertificate);
                 keyStore.load(inputStream, mCertificatePassword != null ?
@@ -539,37 +550,39 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
             throw new HumlaException("Could not read certificate", e,
                     HumlaException.HumlaDisconnectReason.OTHER_ERROR);
         } catch (NoSuchAlgorithmException e) {
-                /*
-                 * This will actually NEVER occur.
-                 * We use Spongy Castle to provide the algorithm and provider implementations.
-                 * There's no platform dependency.
-                 */
+            /*
+             * This will actually NEVER occur.
+             * We use Spongy Castle to provide the algorithm and provider implementations.
+             * There's no platform dependency.
+             */
             throw new RuntimeException("We use Spongy Castle- what? ", e);
         } catch (NoSuchProviderException e) {
-                /*
-                 * This will actually NEVER occur.
-                 * We use Spongy Castle to provide the algorithm and provider implementations.
-                 * There's no platform dependency.
-                 */
+            /*
+             * This will actually NEVER occur.
+             * We use Spongy Castle to provide the algorithm and provider implementations.
+             * There's no platform dependency.
+             */
             throw new RuntimeException("We use Spongy Castle- what? ", e);
         }
     }
 
     /**
      * Sends a protobuf message over TCP. Can silently fail.
-     * @param message A built protobuf message.
+     *
+     * @param message     A built protobuf message.
      * @param messageType The corresponding protobuf message type.
      */
     public void sendTCPMessage(Message message, HumlaTCPMessageType messageType) {
-        if(!mConnected || mTCP == null) return;
+        if (!mConnected || mTCP == null) return;
         mTCP.sendMessage(message, messageType);
     }
 
     /**
      * Sends a datagram message over UDP. Can silently fail, or be tunneled through TCP unless forced.
-     * @param data Raw data to send over UDP.
+     *
+     * @param data   Raw data to send over UDP.
      * @param length Length of the data to send.
-     * @param force Whether to avoid tunneling this data over TCP.
+     * @param force  Whether to avoid tunneling this data over TCP.
      */
     public void sendUDPMessage(final byte[] data, final int length, final boolean force) {
         if (!mConnected) return;
@@ -589,7 +602,7 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
      * Sends a message to the server, asking it to tunnel future voice packets over TCP.
      */
     private void enableForceTCP() {
-        if(!mConnected) return;
+        if (!mConnected) return;
         Mumble.UDPTunnel.Builder utb = Mumble.UDPTunnel.newBuilder();
         utb.setPacket(ByteString.copyFrom(new byte[3]));
         sendTCPMessage(utb.build(), HumlaTCPMessageType.UDPTunnel);
@@ -597,10 +610,11 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
 
     /**
      * Sends the given access tokens to the server.
+     *
      * @param tokens A list of new access tokens to send to the server.
      */
     public void sendAccessTokens(Collection<String> tokens) {
-        if(!mConnected) return;
+        if (!mConnected) return;
         Mumble.Authenticate.Builder ab = Mumble.Authenticate.newBuilder();
         ab.addAllTokens(tokens);
         sendTCPMessage(ab.build(), HumlaTCPMessageType.Authenticate);
@@ -608,17 +622,17 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
 
     @Override
     public void onTCPMessageReceived(HumlaTCPMessageType type, int length, byte[] data) {
-        if(!UNLOGGED_MESSAGES.contains(type))
+        if (!UNLOGGED_MESSAGES.contains(type))
             Log.v(TAG, "IN: " + type);
 
-        if(type == HumlaTCPMessageType.UDPTunnel) {
+        if (type == HumlaTCPMessageType.UDPTunnel) {
             onUDPDataReceived(data);
             return;
         }
 
         try {
             Message message = getProtobufMessage(data, type);
-            for(HumlaTCPMessageListener handler : mTCPHandlers) {
+            for (HumlaTCPMessageListener handler : mTCPHandlers) {
                 broadcastTCPMessage(handler, message, type);
             }
         } catch (InvalidProtocolBufferException e) {
@@ -642,7 +656,7 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
     @Override
     public void onTLSHandshakeFailed(X509Certificate[] chain) {
         disconnect();
-        if(mListener != null) {
+        if (mListener != null) {
             mListener.onConnectionHandshakeFailed(chain);
             mListener.onConnectionDisconnected(null);
         }
@@ -655,18 +669,19 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
 
     @Override
     public void onTCPConnectionDisconnect() {
-        if(mListener != null && !mExceptionHandled) mListener.onConnectionDisconnected(mError);
+        if (mListener != null && !mExceptionHandled) mListener.onConnectionDisconnected(mError);
         disconnect();
     }
 
     @Override
     public void onUDPDataReceived(byte[] data) {
-        if(mServerVersion == 0x10202) applyLegacyCodecWorkaround(data);
+        if (mServerVersion == 0x10202) applyLegacyCodecWorkaround(data);
         int dataType = data[0] >> 5 & 0x7;
-        if(dataType < 0 || dataType > HumlaUDPMessageType.values().length - 1) return; // Discard invalid data types
+        if (dataType < 0 || dataType > HumlaUDPMessageType.values().length - 1)
+            return; // Discard invalid data types
         HumlaUDPMessageType udpDataType = HumlaUDPMessageType.values()[dataType];
 
-        for(HumlaUDPMessageListener handler : mUDPHandlers) {
+        for (HumlaUDPMessageListener handler : mUDPHandlers) {
             broadcastUDPMessage(handler, data, udpDataType);
         }
     }
@@ -674,7 +689,8 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
     @Override
     public void onUDPConnectionError(Exception e) {
         e.printStackTrace();
-        if(mListener != null) mListener.onConnectionWarning("UDP connection thread failed. Falling back to TCP.");
+        if (mListener != null)
+            mListener.onConnectionWarning("UDP connection thread failed. Falling back to TCP.");
         enableForceTCP();
         // TODO recover UDP thread automagically
     }
@@ -690,13 +706,14 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
 
     /**
      * Workaround for 1.2.2 servers that report the old types for CELT alpha and beta.
+     *
      * @param data The UDP data to be patched, if we're on a 1.2.2 server.
      */
     private void applyLegacyCodecWorkaround(byte[] data) {
         HumlaUDPMessageType dataType = HumlaUDPMessageType.values()[data[0] >> 5 & 0x7];
-        if(dataType == HumlaUDPMessageType.UDPVoiceCELTBeta)
+        if (dataType == HumlaUDPMessageType.UDPVoiceCELTBeta)
             dataType = HumlaUDPMessageType.UDPVoiceCELTAlpha;
-        else if(dataType == HumlaUDPMessageType.UDPVoiceCELTAlpha)
+        else if (dataType == HumlaUDPMessageType.UDPVoiceCELTAlpha)
             dataType = HumlaUDPMessageType.UDPVoiceCELTBeta;
         data[0] = (byte) ((dataType.ordinal() << 5) & 0xFF);
     }
@@ -704,7 +721,8 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
     /**
      * Gets the protobuf message from the passed TCP data.
      * We isolate this so we can first parse the message and then inform all handlers. Saves processing power.
-     * @param data Raw protobuf TCP data.
+     *
+     * @param data        Raw protobuf TCP data.
      * @param messageType Type of the message.
      * @return The parsed protobuf message.
      * @throws InvalidProtocolBufferException Called if the messageType does not match the data.
@@ -769,8 +787,9 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
 
     /**
      * Reroutes TCP messages into the various responder methods of the handler.
-     * @param handler Handler.
-     * @param msg Protobuf message.
+     *
+     * @param handler     Handler.
+     * @param msg         Protobuf message.
      * @param messageType The type of the message.
      */
     public final void broadcastTCPMessage(HumlaTCPMessageListener handler, Message msg, HumlaTCPMessageType messageType) {
@@ -862,8 +881,9 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
 
     /**
      * Reroutes UDP messages into the various responder methods of the passed handler.
-     * @param handler Handler to notify.
-     * @param data Raw UDP data of the message.
+     *
+     * @param handler     Handler to notify.
+     * @param data        Raw UDP data of the message.
      * @param messageType The type of the message.
      */
     public final void broadcastUDPMessage(HumlaUDPMessageListener handler, byte[] data, HumlaUDPMessageType messageType) {
@@ -882,6 +902,7 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
 
     /**
      * If the connection to the server was lost due to an error, return the exception.
+     *
      * @return An exception causing disconnect, or null if no error was recorded.
      */
     public HumlaException getError() {
@@ -897,12 +918,13 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
         /**
          * Called when the protocol handshake completes.
          */
-        public void onConnectionSynchronized();
+        public void onConnectionSynchronized(Mumble.ServerSync msg);
 
         /**
          * Called if the host's certificate failed verification.
          * Typically you would use this callback to prompt the user to authorize the certificate.
          * Note that {@link #onConnectionDisconnected(HumlaException)} will still be called.
+         *
          * @param chain The certificate chain which failed verification.
          */
         public void onConnectionHandshakeFailed(X509Certificate[] chain);
@@ -910,12 +932,14 @@ public class HumlaConnection implements HumlaTCP.TCPConnectionListener, HumlaUDP
         /**
          * Called when the connection was lost. If the connection was terminated due to an error,
          * the error will be provided.
+         *
          * @param e The exception that caused termination, or null if the disconnect was clean.
          */
         public void onConnectionDisconnected(HumlaException e);
 
         /**
          * Called if the user should be notified of a connection-related warning.
+         *
          * @param warning A user-readable warning.
          */
         public void onConnectionWarning(String warning);

@@ -22,12 +22,13 @@ import java.security.cert.X509Certificate;
 import se.lublin.humla.model.IChannel;
 import se.lublin.humla.model.IMessage;
 import se.lublin.humla.model.IUser;
+import se.lublin.humla.protobuf.Mumble;
 
 /**
  * Created by andrew on 18/10/15.
  */
 public interface IHumlaObserver {
-    void onConnected();
+    void onConnected(Mumble.ServerSync msg);
 
     void onConnecting();
 

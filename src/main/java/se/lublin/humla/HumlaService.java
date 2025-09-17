@@ -87,7 +87,9 @@ public class HumlaService extends Service implements IHumlaService, IHumlaSessio
      */
     public static final String ACTION_CONNECT = "se.lublin.humla.CONNECT";
 
-    /** A {@link Server} specifying the server to connect to. */
+    /**
+     * A {@link Server} specifying the server to connect to.
+     */
     public static final String EXTRAS_SERVER = "server";
     public static final String EXTRAS_AUTO_RECONNECT = "auto_reconnect";
     public static final String EXTRAS_AUTO_RECONNECT_DELAY = "auto_reconnect_delay";
@@ -106,16 +108,26 @@ public class HumlaService extends Service implements IHumlaService, IHumlaSessio
     public static final String EXTRAS_AUDIO_SOURCE = "audio_source";
     public static final String EXTRAS_AUDIO_STREAM = "audio_stream";
     public static final String EXTRAS_FRAMES_PER_PACKET = "frames_per_packet";
-    /** An optional path to a trust store for CA certificates. */
+    /**
+     * An optional path to a trust store for CA certificates.
+     */
     public static final String EXTRAS_TRUST_STORE = "trust_store";
-    /** The trust store's password. */
+    /**
+     * The trust store's password.
+     */
     public static final String EXTRAS_TRUST_STORE_PASSWORD = "trust_store_password";
-    /** The trust store's format. */
+    /**
+     * The trust store's format.
+     */
     public static final String EXTRAS_TRUST_STORE_FORMAT = "trust_store_format";
     public static final String EXTRAS_HALF_DUPLEX = "half_duplex";
-    /** A list of users that should be local muted upon connection. */
+    /**
+     * A list of users that should be local muted upon connection.
+     */
     public static final String EXTRAS_LOCAL_MUTE_HISTORY = "local_mute_history";
-    /** A list of users that should be local ignored upon connection. */
+    /**
+     * A list of users that should be local ignored upon connection.
+     */
     public static final String EXTRAS_LOCAL_IGNORE_HISTORY = "local_ignore_history";
     public static final String EXTRAS_ENABLE_PREPROCESSOR = "enable_preprocessor";
 
@@ -181,7 +193,7 @@ public class HumlaService extends Service implements IHumlaService, IHumlaSessio
             new AudioHandler.AudioEncodeListener() {
                 @Override
                 public void onAudioEncoded(byte[] data, int length) {
-                    if(mConnection != null && mConnection.isSynchronized()) {
+                    if (mConnection != null && mConnection.isSynchronized()) {
                         mConnection.sendUDPMessage(data, length, false);
                     }
                 }
@@ -355,7 +367,7 @@ public class HumlaService extends Service implements IHumlaService, IHumlaSessio
     }
 
     @Override
-    public void onConnectionSynchronized() {
+    public void onConnectionSynchronized(Mumble.ServerSync msg) {
         // early disconned?
         if (!mConnection.isConnected()) {
             return;
@@ -386,7 +398,7 @@ public class HumlaService extends Service implements IHumlaService, IHumlaSessio
             throw new RuntimeException("Connection should be synchronized in callback for synchronization!", e);
         }
 
-        mCallbacks.onConnected();
+        mCallbacks.onConnected(msg);
     }
 
     @Override
@@ -407,7 +419,7 @@ public class HumlaService extends Service implements IHumlaService, IHumlaSessio
             mConnectionState = ConnectionState.DISCONNECTED;
         }
 
-        if(mWakeLock.isHeld()) {
+        if (mWakeLock.isHeld()) {
             mWakeLock.release();
         }
 
@@ -516,6 +528,7 @@ public class HumlaService extends Service implements IHumlaService, IHumlaSessio
     /**
      * Loads all defined settings from the given bundle into the HumlaService.
      * Some settings may only take effect after a reconnect.
+     *
      * @param extras A bundle with settings.
      * @return true if a reconnect is required for changes to take effect.
      * @see se.lublin.humla.HumlaService
@@ -669,6 +682,7 @@ public class HumlaService extends Service implements IHumlaService, IHumlaSessio
      * Exposes the current connection. The current connection is set once an attempt to connect to
      * a server is made, and remains set until a subsequent connection. It remains available
      * after disconnection to provide information regarding the terminated connection.
+     *
      * @return The active {@link HumlaConnection}.
      */
     public HumlaConnection getConnection() {
@@ -678,6 +692,7 @@ public class HumlaService extends Service implements IHumlaService, IHumlaSessio
     /**
      * Returnes the current {@link AudioHandler}. An AudioHandler is instantiated upon connection
      * to a server, and destroyed upon disconnection.
+     *
      * @return the active AudioHandler, or null if there is no active connection.
      */
     private AudioHandler getAudioHandler() throws NotSynchronizedException {
@@ -691,6 +706,7 @@ public class HumlaService extends Service implements IHumlaService, IHumlaSessio
     /**
      * Returns the current {@link ModelHandler}, containing the channel tree. A model handler is
      * valid for the lifetime of a connection.
+     *
      * @return the active ModelHandler, or null if there is no active connection.
      */
     private ModelHandler getModelHandler() throws NotSynchronizedException {
@@ -703,6 +719,7 @@ public class HumlaService extends Service implements IHumlaService, IHumlaSessio
 
     /**
      * Returns the bluetooth service provider, established after synchronization.
+     *
      * @return The {@link BluetoothScoReceiver} attached to this service.
      */
     private BluetoothScoReceiver getBluetoothReceiver() throws NotSynchronizedException {
@@ -1210,6 +1227,7 @@ public class HumlaService extends Service implements IHumlaService, IHumlaSessio
         /**
          * The connection was lost due to either a kick/ban or socket I/O error.
          * Humla may be reconnecting in this state.
+         *
          * @see #isReconnecting()
          * @see #cancelReconnect()
          */

@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import se.lublin.humla.model.IChannel;
 import se.lublin.humla.model.IMessage;
 import se.lublin.humla.model.IUser;
+import se.lublin.humla.protobuf.Mumble;
 
 /**
  * A composite wrapper around Humla observers to easily broadcast to each observer.
@@ -46,9 +47,9 @@ public class HumlaCallbacks implements IHumlaObserver {
     }
 
     @Override
-    public void onConnected() {
+    public void onConnected(Mumble.ServerSync msg) {
         for (IHumlaObserver observer : mCallbacks) {
-            observer.onConnected();
+            observer.onConnected(msg);
         }
     }
 

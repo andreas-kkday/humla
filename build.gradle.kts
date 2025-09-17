@@ -19,6 +19,7 @@ import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 
 plugins {
     id("com.android.library")
+    alias(libs.plugins.kotlin.ksp)
     // Consider adding kotlin-android plugin if you use Kotlin in this module's source code
     // id("org.jetbrains.kotlin.android")
 }
@@ -42,6 +43,11 @@ dependencies {
     implementation(libs.minidns.android21)
     implementation(libs.guava)
     testImplementation(libs.junit)
+
+    //koin
+    implementation(libs.koin.android)
+    implementation(libs.koin.annotations)
+    ksp(libs.koin.compiler)
 }
 
 // The allprojects block here will configure this project and its subprojects (if any).
